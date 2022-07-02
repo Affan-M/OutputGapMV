@@ -1,4 +1,4 @@
-# OutputGapMV
+# Output Gap Estimation for the Maldives
  
  This has all the codes and files for the paper "Output Gap Estimation for the Maldives".
  
