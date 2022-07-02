@@ -1,0 +1,978 @@
+---
+title: "Output Gap Estimation for the Maldives"
+author: "Ahmed Samah and Mohamed Affan"
+output:
+  bookdown::pdf_document2:
+    latex_engine: lualatex
+    toc: false
+    number_sections: true
+    pandoc_args: !expr rmdfiltr::add_replace_ampersands_filter(rmdfiltr::add_citeproc_filter(args = NULL))
+    includes:
+      in_header: preamble-latex.tex
+
+header-includes:
+  - \usepackage[T1]{fontenc}
+  - \usepackage{fontspec}
+  - \usepackage{xcolor}
+  - \definecolor{default}{HTML}{57585a}
+  - \defaultfontfeatures{Color=default}
+  - \setmainfont[Color=default]{Roboto-Regular.ttf}[
+      BoldFont = Roboto-Medium.ttf,
+      ItalicFont = Roboto-Italic.ttf,
+      BoldItalicFont = Roboto-MediumItalic.ttf]
+  - \setmonofont[Color=default]{FiraCode-Light.otf}
+  - \usepackage{setspace}
+  - \onehalfspacing
+  - \usepackage{caption}
+  - \captionsetup[figure]{labelformat=empty, textformat=empty, font=scriptsize, belowskip=-10pt, aboveskip=0pt}
+  - \captionsetup[table]{font=bf, labelsep=none, textformat=empty, belowskip=-10pt, aboveskip=0pt}
+  - \usepackage{sectsty}
+  - \usepackage{titlesec}
+
+fontsize: 10pt
+csl: apa.csl
+bibliography: outputgap_ref.bib
+citeproc: no
+nocite: |
+  @RCoreTeam2020, @mFilter
+
+abstract: \noindent The gap between the potential and actual output, the output gap, is a key variable for macroeconomic forecasting, analyses and policymaking. This paper adapts different univariate statistical methods for the estimation of the output gap for the Maldives. The analysis of the estimates shows that Beveridge-Nelson filter is the most robust and performs better than its counterparts. In the absence of an official seasonally adjusted Quarterly National Accounts, seasonal adjustments were also carried out using X13-ARIMA-SEATS implemented in `JDemetra+`. In doing so, the paper has acted as a medium to set up an automated process to estimate an unofficial seasonally adjusted Quarterly National Accounts and the output gap of the Maldives as new data with revisions become available.
+---
+\pagenumbering{gobble}
+\newgeometry{a4paper, top=25mm, bottom=25mm, outer=20mm, inner=20mm}
+\newpage
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+\sectionfont{\fontspec[SizeFeatures={Size=20}]{Roboto-Bold.ttf}[Color=default]\selectfont}
+\subsectionfont{\fontspec[SizeFeatures={Size=14}]{Roboto-Bold.ttf}[Color=default]\selectfont}
+\subsubsectionfont{\fontspec[SizeFeatures={Size=12}]{Roboto-Bold.ttf}[Color=default]\selectfont}
+
+\titlespacing*{\section}{0pt}{30pt plus 0pt minus 0pt}{3pt plus 0pt minus 0pt}
+\titlespacing*{\subsection}{0pt}{18pt plus 0pt minus 0pt}{3pt plus 0pt minus 0pt}
+\titlespacing*{\subsubsection}{0pt}{14pt plus 0pt minus 0pt}{3pt plus 0pt minus 0pt}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE, fig.pos = "h", out.extra = "", fig.align = "center")
+
+rm(list=ls())
+options(yaml.eval.expr = TRUE)
+
+library(rmarkdown) # Rmarkdown package 1
+library(knitr) # Rmarkdown package 2
+library(bookdown) # Rmarkdown package 3
+library(kableExtra) # Rmarkdown package 4
+library(citr) # Citation package
+library(rmdfiltr) # Used to fix citations
+
+source("4_charts.R")
+
+# Fix citations function
+add_replace_ampersands_filter(add_citeproc_filter(args = NULL))
+```
+
+# Introduction
+
+Over the past two decades, the Maldivian economy experienced rapid economic growth with the nominal Gross Domestic Product (GDP) per capita increasing from less than US\$3,000 in the year 2001 to over US\$10,000 by the year 2019. With over a quarter of the GDP being directly linked to the tourism sector, the growth in the Maldivian economy over the years has been largely driven by the changes in the tourism industry. Linked to the tourism peak season in the Maldives--corresponding to winter in the northern hemisphere countries--in the first and fourth quarters of each year, clear spikes are evident in the quarterly GDP as well (Figure \@ref(fig:QNA)). It is also noteworthy that despite the tourism sector directly accounting for a quarter of the GDP, the interlinkages of other sectors to the industry further intensifies the impact of the changes in tourism dynamics on the GDP of the Maldives. Transportation and communication sector is the second largest sector with a percentage share of roughly 13%, followed by public administration sector with a share of 8%. Over the past few years, the construction and real estate sectors were experiencing rapid growths due to several public infrastructure projects and ongoing new resort construction, while increasing their percentage share in the GDP.
+
+```{r QNA, fig.cap="QNA", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/QNA_Tou.pdf")
+```
+
+Despite the overall expanding trend in the output of the Maldives, since the turn of the 21st century, the country has encountered three main noticeable economic crises. The first of which was due to the damage caused by the Indian Ocean earthquake and tsunami in December 2004. The effects of the tsunami were felt across the country, with severe damages to physical infrastructure resulting in an immense decline in the tourist arrivals and foreign exchange earnings. Although a large percentage of the reconstruction needs were donor funded, the government expenditure as a percentage of GDP almost doubled from 2004 to 2008 due to rapid unsustainable fiscal expansion [@IMFStaffRep]. The global financial crisis 2007-2009 further exacerbated the existing fiscal imbalances and worsened the current account position of the country. As the country lacks economic diversification, the foreign exchange earnings and fiscal revenues were once again severely curbed by the reduction in tourism revenue due to the global downturn. Much of the widened fiscal deficit was monetized [@IMFStaffRep]. While the economy was striving to overcome the impact of the global financial crisis, the political turmoil during 2011-2012 led to the decline in tourist arrivals, which once again brought numerous challenges. It should also be noted that the impact of the current economic crisis due to the COVID-19 pandemic, or “the Great Lockdown” as dubbed by the International Monetary Fund (IMF), has contracted the Maldivian economy in an unprecedented scale during 2020, and adversely affected the economic activities of the country. The substantial fall in tourist arrivals, the main source of foreign exchange inflow, has created a large shortage in the foreign exchange and severely worsened the fiscal and external positions. Additionally, measures put in place to contain the outbreak further affected the domestic economic activities [@IMFPress]. While the tourism sector is the main sector impacted by the pandemic, the pass-through effect of this and the restriction measures imposed both domestically and by other countries have impacted the majority of the remaining economic sectors as well.
+
+As these expansionary and recessionary periods are persistent characteristics of the business cycle of an economy, it is crucial to determine when and how they occur, for timely policy making. The analysis of output gap is, in many cases, considered as the starting point for studying business cycles [@Ladiray]. The output gap is defined as the difference between the actual and potential output or GDP, where the potential GDP is what can be produced if the economy is at full employment level or at the natural rate of unemployment. In other words, potential output is the maximum level of durably sustainable production, without tensions in the economy, and more precisely without any upside or downward pressure on inflation [@Ladiray]. In this regard, the potential production level is conceived as a supply indicator, and the output gap represents the fluctuations of demand. Hence, a positive output gap indicates excess demand and a negative number indicates excess capacity. The output gap represents transitory movements from potential output.
+
+Generally, the use of potential output and the output gap has the double ambition to point out the position of the economy within the cycle and to evaluate medium and long term growth. Most macroeconomic models that are used for forecasting and policy analysis require an estimate of potential output and the output gap. For instance, measures of output gap are used as indicators of inflationary pressure in Phillips curve models [@Alvarez]. Output gap measures are a useful indicator of fiscal policy stance, and are also needed to estimate the cyclically adjusted government budget balances. It can be particularly useful given the importance of fiscal policy in the case of the Maldivian economy. Moreover, the output gap is featured prominently in the Taylor rule when setting interest rates under monetary policy [@Alvarez]. A level of real GDP above potential (a positive output gap) will often be seen as a source of inflationary pressures and a signal that monetary authorities interested in avoiding an acceleration of inflation should tighten monetary conditions. A level of real GDP below potential (a negative output gap) will have the opposite implication.
+
+In spite of the apparent consensus on the importance of potential output and output gap, the calculation of these and evaluating the methods are problematic as neither of these variables are directly observed. Different sets of assumptions can be used together with different econometric techniques to provide different measures of estimations of the output gap. Hence, the calculation of these variables are sensitive to the model specifications, the method of estimation and the time horizon [@Ladiray], which may lead to different policy responses based on varying estimates. While the output gap estimates are crucial for policy making in real-time, the estimates in real-time could be subjected to revisions as new data become available.
+
+As the central bank of the Maldives, Maldives Monetary Authority (MMA) is a major policy making body responsible for the monetary policy and the financial supervision of the country, in addition to being an important adviser of fiscal policy in the Maldives. Therefore, it would be essential that a reliable estimate of the output gap is available to the institution. Accordingly, the aim of this paper is to present and analyze a menu of available estimation methods of the output gap for the Maldives using the Quarterly National Accounts (QNA) data published by the Maldives Bureau of Statistics (MBS). The paper will also analyze the revision properties of the methods involved and identify issues in the data that need to be fixed going forward. In doing so, the paper will contribute in setting up an automated process of the estimation of the output gap (and possible revision analysis) as more data become available. In the absence of a published seasonally adjusted QNA data, as a by-product, the paper also aims to set up an automated process of the estimation of unofficial seasonally adjusted QNA (headline figures only).
+
+
+# Methodology
+
+According to @Orphanides2002, three distinct issues complicate the estimation of the output gap in real time. Firstly, quarterly GDP data are revised, which in turn, imply that output gaps estimated from real-time data likely differs from the estimates made from data for the same period published later. Secondly, as data in subsequent quarters become available, hindsight may clarify the position of the economy in the business cycle. Finally, as new data become available, it may result in a revision of the model of the economy, which in turn, revises the estimates of the output gap.
+
+Methods for the estimation of the output gap can be broadly classified into univariate and multivariate methods. Univariate methods use one variable i.e. Quarterly Real GDP in this case, while on the other hand, multivariate methods tend to incorporate information from other macroeconomic variables such as inflation and/or unemployment. @Orphanides2002 analyzed the reliability of alternative detrending methods with a focus on the accuracy of real-time estimates of the output and found that the ex post revisions of the estimated gap are of the same order of magnitude as the estimated gap itself and that the revisions were highly persistent. The major conclusion that the authors reached was that rather than the revision of published data, the primary source of revisions in the estimates of the output gap is due to the pervasive unreliability of end-of-sample estimates of the trend in output.
+
+Additionally, @Orphanides2002 found that multivariate methods are not more reliable than their univariate counterparts. Although the additional information incorporated into multivariate methods are useful in principle, the added complexity introduces additional sources of parameter uncertainty and instability which offset any improvements in real time. These findings were further supported by @BNFilter, who proposed a method that could circumvent the issues previously highlighted by @Orphanides2002.
+
+Following these conclusions and to avoid the issue of data unavailability in the Maldives, this paper focuses on univariate models and filters that have been widely used in output gap estimation---which are discussed further below.
+
+## Deterministic trends
+Following @Orphanides2002, deterministic trends models were considered as a benchmark. It is a set of models whereby the trend of the logarithm of quarterly real GDP is approximated as a simple deterministic function of time. The linear trend model assumes a linear trend in the data, while the quadratic trend model extends the linear trend model and assumes a quadratic trend. These models are respectively, mathematically expressed as;
+
+\begin{equation}
+y_t = \beta_0 + \beta_1 t + \epsilon_t,
+\end{equation}
+
+\begin{equation}
+y_t = \beta_0 + \beta_1 t + \beta_2 t^2 + \epsilon_t,
+\end{equation}
+
+where $y_t$ is the observed variable for output, and $t$ refers to the trend or the time index.
+
+An additional model that was considered in this category, was the piecewise linear trend model or a breaking-trend model whereby the slope or trend is allowed to change at particular points in time [@FPP3; @Orphanides2002]. In this case, the model was used to allow breaks in trends around previously known recessions. The model can be mathematically expressed as;
+
+\begin{equation}
+y_t = \beta_0 + \beta_1 t + \beta_2 t \mathbbm{1}[t > t_b] + \epsilon_t,
+\end{equation}
+
+where $y_t$ is the observed variable for output, $t$ refers to the trend or time index, and $t \mathbbm{1}[t > t_b]$ constructs a variable which specifies 1 for all time periods after a specific break point $(t_b)$, effectively allowing the trend to change.
+
+```{r Bai-Perron, include=FALSE, eval=FALSE}
+
+# Differenced
+(diff(QNA_sa/100)*100) -> xt_1
+
+# Exact growth
+((exp((as.numeric(QNA_sa)-lag(as.numeric(QNA_sa), n=1))/100)-1)*100) %>%
+  .[!is.na(.)] %>%
+  ts(., start = c(2003, 2), frequency = 4) -> xt_2
+
+# Main data table
+data.table("Period" = time(QNA_sa) %>% as.yearqtr(),
+           "QNA" = as.numeric(QNA_sa)) -> baiperron_dt
+
+# Merging differenced and exact growth series
+data.table("Period" = time(xt_1) %>% as.yearqtr(),
+           "Diff" = xt_1,
+           "ExactGrowth" = xt_2) %>%
+  merge(baiperron_dt, ., by = "Period") %>%
+  .[, "trend" := 1:nrow(.)] -> baiperron_dt
+
+# Converting everything to numerics
+baiperron_dt[, lapply(.SD, as.numeric), by = "Period"] -> baiperron_dtf
+
+# Bai-Perron test - differenced series
+bp1 <- breakpoints(formula = Diff ~ 1, data = baiperron_dtf)
+
+# Bai-Perron test - exact growth series
+bp2 <- breakpoints(formula = ExactGrowth ~ 1, data = baiperron_dtf)
+
+# Writing to excel to double check with Eviews
+# list("BP" = baiperron_dtf) %>%
+#   write.xlsx(., file = "BaiPerron.xlsx")
+
+```
+
+In order to date the recessions for the model, a Bai-Perron test was used. This test, which was developed by @baiperron and implemented in `strucchange` package for `R` by @strucchange1 and @strucchange2, allows for the detection of multiple structural breaks.
+
+However, it should be noted that dating structural breaks requires the consideration of two important practical issues. Firstly, it is difficult to detect breaks in real time as it requires hindsight and a large number of observations even after it occurs. Secondly, there is a concern that break date estimates are not particularly robust even when successful at dating breaks, and is subject to changes in results based on the number of observations. [@BNFilter]
+
+In the case of the Maldives' quarterly real GDP growth rates, no breaks were detected using the test---likely due to the power of the test suffering as a result of the small sample of 74 observations. Therefore, three breaks were used for the piecewise linear regression, Q4-2004, Q4-2008 and Q1-2020 for the 2004 Indian Ocean earthquake and tsunami, the global financial crisis of 2007-2009 and the COVID-19 pandemic, respectively. The breaks had to be selected arbitrarily based on the inspection of growths and visualization as per Figure \@ref(fig:QNA).
+
+## Hodrick-Prescott filter
+Hodrick-Prescott (HP) filter, introduced by @HPFilter, is relatively easy to implement, is often available in many statistical packages, and is widely used in practice. The authors proposed interpreting the trend component, $g_t$, as a very smooth series that does not differ significantly from the observed variable, $y_t$. This is mathematically expressed as;
+
+\begin{equation}
+\min_{\{g_t\}^T_{t=-1}} \Bigg\{ \sum^T_{t=1} (y_t - g_t)^2 + \lambda \sum^T_{t=1} [(g_t - g_{t-1}) - (g_{t-1} - g_{t-2})]^2 \Bigg\},
+\end{equation}
+
+whereby $\lambda$ acts as a smoothness penalty. The first term of the equation is the sum squared deviations of the observed values from the trend and are assumed to average near zero over long periods of time, while the second term is a multiple of the second difference of the trend (growth rate of the trend) and $\lambda$, the smoothing parameter. When the smoothness penalty $\lambda \rightarrow 0$, $g_t$ would just be the series $y_t$ itself, while on the other hand, when $\lambda \rightarrow \infty$ the procedure amounts to a regression on a linear time trend. As per common practice, the arbitrary value of $\lambda$ is set to 1600 for the quarterly data series in this paper. [@BNFilter; @HPissue1]
+
+However, HP filter is famously criticized for its unreliability, often generating spurious dynamic relations not present in the underlying data-generating process ("spurious cycle" effect), filtered values at the end of the sample being very different from the values in the middle (end-point problems), in addition to the largely arbitrary values for the smoothing parameters being used in common practice. [@HPissue1; @HPissue2; @HPissue3]
+
+It should be noted that @Edge2016 attempted to address the end-point problems by padding the data with AR(4) forecasts---as perfect forecasts would essentially, mitigate if not, resolve this issue. However, the findings of this paper were largely in line with those of @BNFilter, whereby padding the data resulted in virtually no change in the estimates, which also reflected the difficulty of forecasting future output growth.
+
+## Alternative to Hodrick-Prescott filter
+Following the critique of the HP filter, @HPissue1 proposed an alternative whereby he recommended to rely on very simple forecasts within a restricted class---the population linear projection of $y_{t+h}$ on a constant and the four $(p)$ most recent values of $y$ as of date $t$. Mathematically, when $p = 4$, the OLS regression function and the residuals can be expressed respectively as following.
+
+\begin{equation}
+y_{t+h} = \beta_0 + \beta_1 y_t + \beta_2 y_{t-1} + \beta_3 y_{t-2} + \beta_4 y_{t-3} + v_{t+h},
+\end{equation}
+
+\begin{equation}
+\hat{v}_{t+h} = y_{t+h} - \hat{\beta_0} - \hat{\beta_1} y_t - \hat{\beta_2} y_{t-1} - \hat{\beta_3} y_{t-2} - \hat{\beta_4} y_{t-3}
+\end{equation}
+
+@HPissue1 explained that this method would provide a reasonable way to construct the transient component for a broad class of underlying processes in addition to the series being stationary provided that fourth differences of $y_t$ are stationary---a goal that the HP filter intends but does not necessarily achieve.
+
+An issue that had to be addressed was the specification of the equation. Although one may be tempted to use a richer model, such as using a vector of variables, more than four lags $(p)$ or even a nonlinear relation, @HPissue1 recommended to use the univariate regression as it is estimating a population object that is well defined regardless of whether the variable is part of a large vector system with nonlinear dynamics. Additionally, the author noted the significant drawback of having more parameters whereby the small sample results are likely to deviate further from the asymptotic predictions.
+
+Similarly, the choice of the forecast horizon $(h)$ to be set in the equation above also had to be addressed. @HPissue1 noted that in the case of business cycles, a two-year horizon should be the standard benchmark, and noted that it is desirable with seasonal data to have both $p$ and $h$ be integer multiples of the number of observations in a year. Therefore, for quarterly data, the author recommended $p = 4$ and $h = 8$---the specification that was used in this paper as well.
+
+
+## Bandpass filter
+Bandpass (BP) filter, introduced by @BP1 and @BP2, is similar to the HP filter in that it is popular, easy to implement and widely available in statistical packages or programs. The authors proposed that the time series be decomposed into components corresponding different frequencies, and isolate the components corresponding with the frequencies of the "business cycle". The goal is, essentially, to exclude fluctuations at very high frequencies like seasonal components and at very low frequencies which are assumed to correspond with the long-run. [@MonashCourseNotes]
+
+While according to @BP2, it is common practice to target frequencies between 6 and 32 quarters in business cycle analysis, @IMFCourseNotes also suggests a shorter variant between 4 and 24 quarters. Interestingly, the latter was also what @BP2 suggests for an "IID case", whereby the optimization criterion assigns equal weight to all frequencies.
+
+BP filter has also been criticized by @BPIssue1, citing that the filter rather than isolating the cycle, passes the first difference of the trend through to the filtered series. This essentially results in the spectral properties of the first series depending on the trend of the unfiltered series. The author further illustrated the potential for the BP filter to overstate the importance of transitory dynamics at business cycle frequencies.
+
+Despite the issues raised for both the HP and BP filter, due to the popularity of the methods and to follow convention, they are included in the paper.
+
+```{r End-point padding analysis, include=FALSE, eval=FALSE}
+auto.arima(QNA_sa) %>% forecast(., h=4) -> model1 # ARIMA model
+
+# Arima(QNA_sa, order = c(4,1,0)) %>% forecast(., h=4) -> model2 # AR(4) model
+# Virtually no difference between AR(4) and ARIMA. Went with ARIMA as more likely to be able to get a better model than restricting to just AR.
+
+# Padded QNA with the ARIMA results
+ts.m1 <- c(QNA_sa, model1[["mean"]]) %>% ts(., start = c(2003,1), frequency = 4)
+
+# HP filter comparison
+hp1 <- hpfilter(QNA_sa, type = "lambda", freq = 1600, drift = FALSE)
+hp2 <- hpfilter(ts.m1, type = "lambda", freq = 1600, drift = FALSE)
+
+max(abs(hp1[["cycle"]]-hp2[["cycle"]]))
+
+# BP filter - Long comparison
+cf1 <- cffilter(QNA_sa, type = "asymmetric", pl = 6, pu = 32, root = TRUE, drift = TRUE)
+cf2 <- cffilter(ts.m1, type = "asymmetric", pl = 6, pu = 32, root = TRUE, drift = TRUE)
+
+max(abs(cf1[["cycle"]]-cf2[["cycle"]]))
+
+# BP filter - Short comparison
+cf3 <- cffilter(QNA_sa, type = "asymmetric", pl = 4, pu = 24, root = TRUE, drift = TRUE)
+cf4 <- cffilter(ts.m1, type = "asymmetric", pl = 4, pu = 24, root = TRUE, drift = TRUE)
+
+max(abs(cf3[["cycle"]]-cf4[["cycle"]]))
+
+```
+
+```{r Unit root tests, include = FALSE, eval=FALSE}
+
+# ADF test
+ur.df(QNA_sa, type = "none", selectlags = "AIC") %>% summary()
+ur.df(QNA_sa, type = "drift", selectlags = "AIC") %>% summary()
+ur.df(QNA_sa, type = "trend", selectlags = "AIC") %>% summary()
+
+# KPSS test
+ur.kpss(QNA_sa, type = "mu", lags = "short") %>% summary()
+ur.kpss(QNA_sa, type = "tau", lags = "short") %>% summary()
+
+# Based on both ADF and KPSS tests, no unit root exists. They are trend-stationary. But the CF filter below does not look alright without assuming unit root exist and drift is false. Need to look into CF filter more. Could be that they are testing whether a trend exists (root) and mean is significantly different from 0 (drift)
+
+# cf1 <- cffilter(QNA_sa, type = "asymmetric", pl = 6, pu = 32, root = TRUE, drift = TRUE) # Long
+# cf2 <- cffilter(QNA_sa, type = "asymmetric", pl = 4, pu = 24, root = TRUE, drift = FALSE) # Short
+
+# Alternatively, use a regression to remove trend
+# tslm(formula = QNA_sa ~ trend) %>% .[["residuals"]] %>%
+#   cffilter(., type = "asymmetric", pl = 6, pu = 32, root = FALSE, drift = FALSE) -> cf3
+
+```
+
+## Beveridge-Nelson filter
+Beveridge-Nelson (BN) decomposition, introduced by @BNDec, explains the trend of a time series as its long-horizon conditional expectation, after removing any deterministic future movements in the series. The intuition behind the decomposition is that under the assumption that the conditional expectations of the cyclical component goes to zero at long horizons, the long-horizon conditional expectation of a time series is the same as that of the trend component. [@BNFilter]
+
+The Beveridge-Nelson (BN) filter, proposed by @BNFilter, uses a BN decomposition that employs a Bayesian estimation of an AR(p) model as its forecast model to compute the long-horizon conditional expectation of the trend, as it allowed them to utilize a shrinkage prior on the higher lags of the AR(p) model. The main benefits of this include allowing the authors to employ a higher-order AR(p) model without the risk of overfitting, in addition to being able to mitigate the issue of specifying the exact lag order for the model. The authors noted that in practice, for quarterly data, they considered an AR(12) model although the results are robust to considerations of even higher lag orders given the shrinkage.
+
+Central components of the BN filter are the signal-to-noise ratio and the amplitude-to-noise ratio. Signal-to-noise for a time series is defined as the ratio of the variance of trend shocks and the overall forecast error variance ($\delta \equiv \sigma^2_{\Delta\tau} / \sigma^2_e$), while the amplitude-to-noise ratio is defined in terms of the variance of the cycle and the overall forecast error variance (estimated as $\hat{\sigma}_c (\bar{\delta}) / \hat{\sigma}^2_e (\bar{\delta})$). The optimization of the two results in persistent output gap estimates with large amplitude. It should be noted that the estimated output gap, revision properties and real-time forecast performance of the filter is highly robust to imposing low values of $\delta$ other than the optimized value. [@BNFilter]
+
+Moreover, @BNFilter stressed that the BN filter estimates are particularly robust to revisions due to the their choice to work with AR models. While the BN decomposition can be applied to any model that generates a long-horizon forecast, including multivariate models such as vector autoregressive (VAR) models, the instability in the estimated parameters in real time produces estimates of the output gap that are subject to heavy revisions---which is largely in line with the findings of @Orphanides2002.
+
+In addition to being robust to the omission of multivariate information in the forecasting model, it is also reliable in terms of minimizing a spurious cycle unrelated to future output growth or other macroeconomic variables---tested based on simulations and out of sample forecast comparisons. [@BNFilter]
+
+As highlighted above, dealing with structural breaks in real time is a difficult task. However, @BNFilter proposed a way to guard against possible structural breaks in the long-run growth rate in real time while still being robust to multiple or gradual breaks. The authors proposed to dynamically demean the data using a backward-looking rolling forty-quarter average growth rate, instead of testing for breaks and adjusting the date to their regime-specific means. The authors noted that the arbitrary decision to select 40 quarters as an appropriate window was to smooth over the effects of most business cycle fluctuations on average growth.
+
+@BNFilter also noted that the attractive properties of the filter were also found to be true, for a wide range of data series.
+
+For the paper, three separate BN filters with different configurations were selected. The first is one with a 40-window demeaning procedure which would guard against structural breaks in real time as well, a second configuration just demeaned using the sample mean (default configuration), and a third configuration with piecewise demeaning, whereby manual break dates were used. In the last configuration, break dates were set for the same breakpoints in Q4-2004, Q4-2008, and Q1-2020.
+
+
+# Data
+
+Main source data that is used for the paper is the Quarterly National Accounts or seasonally unadjusted quarterly real GDP published by @MBSWeb, whose most recent publication includes data from Q1-2003 to Q2-2021. For the purpose of revision analysis, all publications since Q4-2017 were used---which was the point from which continuous publications are available. This provided a minimum total observations of 60 for the earliest vintage (Q4-2017) and a maximum total observations of 74 for the most recent vintage (Q2-2021).
+
+## Issues in the data
+
+Ideally, the statistical methods and models would be used on seasonally adjusted quarterly real GDP data provided by the Maldives Bureau of Statistics. Given the absence of such seasonally adjusted data, for the purpose of output gap estimation, X-13ARIMA-SEATS is used---which is a notable seasonal adjustment software developed by @X13ARIMA, and is the current version of the X-11 family. The X-11 program was first developed by the U.S. Census Bureau [@X11], with subsequent improvements implemented in X-11-ARIMA program by Statistic Canada [@X11ARIMA] and X-12-ARIMA by the @X12ARIMA.
+
+It should be noted that all seasonal adjustment processes were carried out using the default settings of RSA1 in the automated algorithms, `x13`, implemented in `RJDemetra` by @RJDemetra, which is the official `R` interface to `JDemetra+` by @JDemetra1. These are the seasonal adjustment software officially recommended by @JDemetra2. The specification RSA1, which uses an ARIMA(0,1,1)(0,1,1) model (as opposed to a specification that uses an automatic ARIMA model algorithm), was selected due to the benefits of stability that a parsimonious model would give. Additionally, using a fixed and stable model would assist in assessing the output gap estimation methods too---as fluctuations due to changing seasonal adjustment methods could be eliminated.
+
+The seasonally adjusted values were also compared with X-11-ARIMA, STL decomposition---developed by @STL---and another X-13-ARIMA implementation in `R` with relatively insignificant differences between the methods. These seasonal adjustment processes were also carried out using the default settings in the automated algorithms, `stl`, `seas`, and `seasadj`---implemented in `stats` and `seasonal` packages for `R` by @RCoreTeam2020 and @seasonal, respectively.
+
+```{r Comparison of Seasonal Methods, include=FALSE, eval=FALSE}
+
+# X13
+x13_m <- x13(QNA_ts, spec = "RSA1")
+x13_sa <- x13_m[["final"]][["series"]][, "sa"]
+
+# X11
+x11_m <- seas(QNA_ts, x11 = "")
+x11_sa <- x11_m[["data"]][, "final"]
+
+# STL
+stl_sa <- stl(QNA_ts, s.window = "period") %>% seasadj()
+
+## Differences
+# RMSE
+sqrt(mean((x13_sa - x11_sa)^2))
+sqrt(mean((x13_sa - stl_sa)^2))
+sqrt(mean((x11_sa - stl_sa)^2))
+
+# MAE
+mean(abs(x13_sa - x11_sa))
+mean(abs(x13_sa - stl_sa))
+mean(abs(x11_sa - stl_sa))
+
+```
+
+The main issue within the data that arose was the relatively small number of observations, which has the potential to cause issues of instability in the statistical models. Moreover, for statistical tests, a small number of observations would mean that the power of the test i.e. the probability of making a type II error (wrongly failing to reject the null hypothesis) would suffer.
+
+Additionally, the relatively small number of observations combined with the long period of revisions that occur also decreases the ability to do sufficient revision analysis, or in other words, gauge the real-time properties of the estimates of the output gap. According to the @MBSQNASM, the sources of revisions are twofold---updates to the source data and due to benchmarking. Benchmarking is carried out to ensure the reconciliation of Quarterly National Accounts and Annual National Accounts, using IMF's `XLPBM` Macro which is based on the proportional first difference (PFD) method by Denton.
+
+## Time series properties
+
+In order to assess the time series properties of the quarterly real GDP series, the diagnostic tests carried out by `JDemetra+` is used alongside an STL decomposition, plots of Autocorrelation and Partial Autocorrelation Function (ACF and PACF, respectively), in addition to other visualizations.
+
+As such, while examining the time series properties of the STL decomposition (Figure \@ref(fig:STL)), it can be seen that the strongest component is the trend component, followed by the remainder and seasonal component---evident from the bars on the right (whereby the stronger components have the smallest bars) as well as the scale.  When the relative contribution of the component to the stationary portion of the variance was examined (Appendix \@ref(variance-decomposition) Table \@ref(tab:VarDecomp)), a significant seasonal component and a cycle component could be seen, as the remainder component has been further broken down.
+
+These findings are further supported by the ACF and PACF plots (Figure \@ref(fig:ACFPACF)), whereby strong autocorrelation is present which is an indication of the strong trend component. The insignificant seasonal lags of PACF (4, 8, 12 and 16) show that seasonality is a much weaker component, relative to the trend, as expected.
+
+```{r STL, fig.cap="STL", fig.width=.width, fig.height=(.height+1)}
+knitr::include_graphics("charts/STL.pdf")
+```
+
+```{r ACFPACF, fig.cap="ACFPACF", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/ACFPACF.pdf")
+```
+
+However, it should be noted that there is significant or identifiable seasonality present in the data, which is evident from the combined seasonality tests undertaken by `JDemetra+` (Appendix \@ref(combined-non-parametric-tests-results-for-stable-seasonality) Table \@ref(tab:SeasonalityTests)). The combined seasonality tests consist mainly of a test for the presence of seasonality assuming stability, a Krukall-Wallis test (a non-parametric test which tests whether samples originated from the same distribution) and an evolutive seasonality test (which tests for moving seasonality). [@JDemetra3]
+
+```{r EvolutiveTest, include=FALSE, eval=FALSE}
+
+# Full sample
+x13(QNA_ts, spec = "RSA1") %>% .[["diagnostics"]] %>% .[["combined_test"]]
+
+# Restricted sample (end of 2021 Q1) - without 2021 Q2
+QNA_ts2 <- QNA_ts %>% window(end = c(2021, 1))
+x13(QNA_ts2, spec = "RSA1") %>% .[["diagnostics"]] %>% .[["combined_test"]]
+
+```
+
+However, based on the results of the moving seasonality test and the visualization of the X13-ARIMA-SEATS model's seasonal component (Figure \@ref(fig:X13comp)), the strength of the seasonal component has gotten slightly weaker---due to the effect of the pandemic and the recovery.
+
+The presence of seasonality is further seen below (Figure \@ref(fig:Subseries)) while examining the subseries plot of seasonally unadjusted data, whereby clear spikes in the average values for Q1 and Q4 can be observed. However, once seasonal adjustment is carried out, the differences in the means between the quarters are much less significant---which essentially shows the effectiveness of the seasonal adjustment process.
+
+```{r X13comp, fig.cap="X13comp", fig.width=.width, fig.height=(.height+1)}
+knitr::include_graphics("charts/X13decomp.pdf")
+```
+
+
+```{r Subseries, fig.cap="Subseries", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/Subseries.pdf")
+```
+
+The effectiveness of the seasonal adjustment process is further supported by the residual seasonality tests carried out by `JDemetra+` (Appendix \@ref(residual-seasonality-tests-results) Table \@ref(tab:ResTests)). According to @JDemetra3, the main tests carried out include a Doornik-Hansen test for the normality of residuals distribution, Durbin-Watson, Ljung-Box and Box-Pierce tests for the autocorrelation of residuals, in addition to a Wald-Wolfowitz test for the randomness of residuals.
+
+This is also evidenced by the residual series depicting white noise with no seasonal pattern present (Figure \@ref(fig:X13comp)). The presence of certain outliers can also be seen in the remainder component---the 2004 Indian Ocean earthquake and tsunami, and the COVID-19 pandemic of 2020.
+
+
+# Experiment
+
+The experiment to assess the most appropriate statistical method to compute the output gap estimates are carried out in two steps---revision properties of the methods, and the analysis of the output gap estimates of shortlisted methods. This is explained below in more detail in the respective subsections.
+
+## Revision properties
+
+The analysis of the revision properties involves estimating the output gap from an old vintage of the data (pseudo real-time), re-estimating the output gap from a more recent vintage published with revisions (final estimates), and making a comparison to assess the revision properties of the methods. As such, as mentioned above, the earliest vintage was the data published for Q4-2017, while the most recent vintage available was the data published for Q2-2021 [@MBSWeb].
+
+While the pseudo real-time estimates are straightforward, the fairly long period of revisions that occur due to updates to the source data and benchmarking result in more difficulty at gauging the final vintage for the experiment. Since large revisions would entirely be driven by changes to source data, and the revisions that benchmarking would result in is minuscule, the point at which data revisions stop was recognized by looking at a revision triangle, similar to the one constructed by @MBSPub. The revision triangle constructed by the bureau involves examining the changes in the corresponding quarter growth rates between the first and second estimate, followed by calculating certain revision indicators. For the purposes of this paper, a similar revision triangle was constructed for each estimate compared with the previous estimate, and used one of the indicators, Mean Absolute Revisions (MAR), to decide a cut-off. Mean Absolute Revisions are calculated by
+
+$$
+MAR = \frac{1}{n} \sum_{i=2}^n |g_i - g_{i-1}|;
+$$
+where $g$ refers to the corresponding growth rate and $i$ refers to the respective estimate number.
+
+Based on Figure \@ref(fig:MAR) which illustrates the mean absolute revisions for each estimate, the first big dip is between the fourth and third estimate. This would fall in line with @MBSPub's information as well, whereby the bureau releases three vintages of the current quarterly GDP followed by an annual release---and each release is based on more detailed and comprehensive data as they became available. Furthermore, it was noted that annual updates generally cover at least the 3 most recent calendar years and their associated quarters, and that it incorporates newly available major annual source data as well as some changes in methods and definitions to improve the accounts.
+
+```{r MAR, fig.cap="MAR", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/MAR.pdf")
+```
+
+For the purpose of the experiment, the ability to pick an earlier estimate is important as it would provide more observations. For example, despite the twelfth estimate having the smallest revision, it would only provide four observations---Q4-2017 to Q3-2018 as the pseudo real-time estimates compared with Q3-2020 to Q2-2021 as the ex post estimates of the output gap. However, if the sixth estimate were to be selected as the ex post estimate, it would provide 10 observations, as the sixth estimate for all periods from Q4-2017 to Q1-2020 have been released as of now.
+
+Therefore, in the interest of ensuring that the experiment was as robust as possible, with as many possible observations, the sixth estimate was selected as the ex post estimate of the output gap. This is largely in line with @MBSPub's information, whereby the first annual update would have been released regardless of the quarter. For example, Q1-2020's first annual update was released by @MBSWebAnnual on 30th September 2021, alongside the release of Q2-2021's first estimates. Therefore, the annual update for Q1-2020 is first included in Q2-2021's release, i.e. the sixth estimate. Furthermore, it also follows Figure \@ref(fig:MAR) which shows a decrease in MAR when sixth estimates are compared with fifth and an even more significant decrease when it is compared with the seventh estimates.
+
+According to @MBSPub, each annual release could update at least the 3 most recent calendar years---which indicates that more than 14 estimates would be required for annual releases to not result in revisions. However, based on the most recent vintages, even the fifteenth estimate could result in revisions. Therefore, based on current data, it is not sensible to sacrifice the number of observations for a longer window between the pseudo real-time estimate and the ex post estimate.
+
+Based on @BNFilter's experiment, the revision statistics used for the comparison between the pseudo real-time and ex post estimates are broadly categorized into two---the size of the revisions and the correlation between the two estimates. The first category includes the measures of Root Mean Squared (RMS) revisions and the standard deviation of the revisions, while the second category contains the measures of correlation and the proportion of same signs occurring between the two estimates.
+
+It should be noted that the tables of the corresponding quarterly real GDP growth rates and revision properties are provided in Appendix \@ref(revision-properties-experiment) Tables \@ref(tab:GrowthTb) and \@ref(tab:RevTb), respectively.
+
+## Final output gap estimates
+
+Based on the revision properties, the best performing methods were shortlisted---and their estimates using the most recent vintage of data were examined. As highlighted above, there is no formal test that could test the validity of the estimates---due to the potential output and by extension, the output gap being unobserved variables. However, @Orphanides2002 suggested that analysis should be conducted on how the estimates do around turning points, as they are presumably the periods when an accurate and timely estimate of the output gap are of particular interest to policymakers.
+
+However, this is particularly difficult in the case of Maldives, as this leads the discussion back to the challenge of defining and dating recessions. As stated above, the formal Bai-Perron test which could test for structural breaks likely lacks power due to the small number of observations. @Recession1, in a Congressional Research Service report prepared for the United States Congress, outlined that a commonly cited "rule of thumb" is that a recession is two consecutive quarterly declines in real GDP. However, the author does note that the rule does not always apply and the Business Cycle Dating Committee from National Bureau of Economic Research (NBER) generally analyzed multiple variables in defining the recession.
+
+As such, @Recession2 states that the main measures that are used include personal income less transfer payments, in real terms (calculated as a monthly measure covering most of the income from a GDP calculated from an Income approach), alongside the payroll employment from the Bureau of Labor Statistics. However, NBER does note that other indicators such as real personal consumption expenditure, industrial production, initial claims for unemployment insurance, wholesale-retail sales adjusted for price changes, and household employment are all taken into consideration when deemed valuable. NBER further highlights that there is no fixed rule as to which measures contribute information to the process or how they are weighted when the committee reaches the final decision.
+
+Given that most of these measures are either unavailable or not even measured and collected in the Maldives, for the purpose of this paper, the relatively crude rule of two consecutive declines in quarterly real GDP was used to define and date recessions. By extension, these recessions were then used to assess the turning points of the estimates from the shortlisted statistical methods.
+
+## Inflation Forecasting
+
+According to @IMFInfFc, a desirable feature of a good output gap estimate would be to have a strong explanatory power for predicting inflation. As such, this property could be tested using the Phillips curve as expressed below:
+
+$$
+\pi_t = \theta \hat{y}_t + \lambda \pi^e_t + (1 - \lambda)\pi^*_{t-1} + \mu \pi_{m,t} + \epsilon_t,
+$$
+$$
+\pi^e_t = \alpha + \beta \pi^*_{t-1} + \eta_t,
+$$
+where $\pi_t$ is headline consumer price inflation (defined as quarterly inflation, annualized), $\hat{y}_t$ is the output gap, $\pi^e_t$ denotes long-term inflation expectations, $\pi^*_{t-1}$ is the average of the last four quarterly inflation rates, and $\pi_{m,t}$ is import price inflation relative to headline inflation.
+
+Two tests could be performed based on this model---checking in-sample properties of the output gap measures and calculating the squared errors from one-quarter ahead out-of-sample forecasts through an iterative procedure. [@IMFInfFc]
+
+However, as the Maldives does not have any official index to measure the import prices, these tests were not conducted. It is recommended that these tests be performed once an official import price inflation or a robust estimate of it becomes available.
+
+
+# Results
+
+As explained above, the best performing models were selected based on their revision properties, after which the shortlisted models' final estimates were further assessed. All measures presented below have been averaged over all six windows, in order to ensure the measures are as robust as possible.
+
+## Revision properties of the methods
+
+For the measures of standard deviation and root mean square under the first category, the lowest values are the best performing models. As such, when the size of the revisions (illustrated in Figure \@ref(fig:RevSize)) were examined, the BN filter models and the Piecewise linear trend model stood out as the best performing models, with the lowest variance and deviation between the pseudo real-time and ex post estimates.
+
+On the other hand, for the measures of correlation and the percentage of the same sign for both estimates under the second category, the highest values are the best performing models (illustrated in Figure \@ref(fig:RevCorr)). In this category, all models performed generally very well, with correlations and the percentage of same signs approximately greater than 90%. Therefore, there is less of a distinction that can be drawn between models using these measures. The high correlation across the board is likely due to the way the experiment has been set up, whereby there is a relatively short window between the pseudo real-time estimate and ex post estimate. However, it should be noted that similar to the previous category, the BN filter models and the Piecewise linear trend model did stand out, with the highest correlation and percentage of same signs.
+
+Within the group of BN filters, the 40-window demeaning procedure seem to have performed the best out of all BN filter models, while the BN filter demeaned using the sample mean came a close second and the BN filter with manual break dates performed the worst. From the two variants of BP filters, the filter with shorter target frequency of 4 to 24 quarters performed better than the longer variant, which likely indicates the suitability of the former. From the group of models with deterministic trends, piecewise linear trend model performed best.
+
+It should be noted that the experiment was tested for multiple window lengths (i.e. taking different estimates for the ex post estimate) between four and fifteen. BN filter models consistently performed best or near the top, while there were some variation in other methods. It is worth considering revisiting and rerunning the experiment, once more observations have been received. It is likely that BN filter, with an underlying model, could perform even better as the estimation uncertainty or the parameter instability would decrease as the sample increases.
+
+The complete tables for the revision properties are provided in Appendix \@ref(revision-properties-of-statistical-methods) Tables \@ref(tab:RevSizeTb) and \@ref(tab:RevCorrTb).
+
+```{r RevSize, fig.cap = "RevSize", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/RevSize.pdf")
+```
+
+```{r RevCorr, fig.cap="RevCorr", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/RevCorr.pdf")
+```
+
+## Output gap estimates
+
+The best performing models from each group were selected for further assessment below. As such, the selected models were BN filter with the 40-window demeaning procedure, Piecewise linear trend model, BP filter with shorter target frequency of 4 to 24 quarters, and the HP filter. In order to assess the turning points of the final estimates, the preceding quarter growth rates (GDP compared with the previous quarter) were calculated and based on the rule of two consecutive declining quarters of real GDP, recessions were recognized. This is illustrated below in Figure \@ref(fig:RecessionChart), alongside corresponding quarter growth rates (GDP compared with the same quarter in the previous year). Generally, corresponding quarter growth rates are used in the absence of seasonally adjusted data, as it avoids the issue of seasonality. However, preceding quarter growth rates would be significantly better as a comparison tool if seasonally adjusted data are available, as it would allow comparisons with a more recent observation.
+
+```{r RecessionChart, fig.cap="RecessionChart", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/Reccesion.pdf")
+```
+
+
+```{r QNA Growth Rates, include=FALSE, eval=TRUE}
+
+# Mean
+Growth.QNA.g[Variable == "GrowthPrec", Value] %>% mean() -> mean_prec
+Growth.QNA.g[Variable == "GrowthCorr", Value] %>% mean() -> mean_corr
+
+mean_multiplier <- mean_corr/mean_prec
+
+# Standard deviation
+Growth.QNA.g[Variable == "GrowthPrec", Value] %>% sd() -> sd_prec
+Growth.QNA.g[Variable == "GrowthCorr", Value] %>% sd() -> sd_corr
+
+sd_multiplier <- sd_corr/sd_prec
+
+# Percentage of positive quarters
+sum(Growth.QNA.g[Variable == "GrowthPrec", Value] > 0)/length(Growth.QNA.g[Variable == "GrowthPrec", Value])*100 -> positive_prec
+sum(Growth.QNA.g[Variable == "GrowthCorr", Value] > 0)/length(Growth.QNA.g[Variable == "GrowthCorr", Value])*100 -> positive_corr
+
+# Comparison between unadjusted and adjusted corresponding growth rates
+# Abs Mean and SD
+Corr_test_dt[, Difference] %>% abs() %>% mean(., na.rm = TRUE) -> mean_corr_difference
+Corr_test_dt[, Difference] %>% abs() %>% sd(., na.rm = TRUE) -> sd_corr_difference
+
+```
+
+The most significant thing that can be seen from the figure is the stark difference between preceding quarter growth rates of seasonally adjusted quarterly real GDP and the corresponding quarter growth rates. As such, the mean preceding quarter growth rate is `r round(mean_prec, 2)`% while the mean corresponding quarter growth rate is `r round(mean_corr, 2)`%---the latter being approximately `r round(mean_multiplier, 0)` times larger than the former. Furthermore, the corresponding quarterly growth rates have been positive for `r round(positive_corr, 0)`% of the quarters, while the preceding quarterly growth rates were positive in only `r round(positive_prec, 0)`% of the quarters. The corresponding quarterly growth rates also display a much higher level of volatility with a standard deviation of `r round(sd_corr, 2)`, while the preceding quarterly growth rates have a standard deviation of `r round(sd_prec, 2)`.
+
+It should also be noted that the corresponding quarterly growth rates for the seasonally unadjusted and adjusted rates were compared, with minor differences between them. As such, when the differences were analyzed, there was a mean absolute deviation of `r round(mean_corr_difference, 2)`% and a standard deviation of `r round(sd_corr_difference, 2)`. This is further illustrated in Appendix \@ref(corresponding-quarterly-growth-rates) Figure \@ref(fig:CorrGrowth). This shows that the stark difference between the growth rates described above, is not a result of the seasonal adjustment process, but rather a difference in the base period to which the comparisons are made.
+
+Most importantly, this exposes the dangers and risks of using corresponding quarter growth rates, whereby the comparisons are essentially being made to quarters much further behind in the trend. This is exacerbated by the strong trend component that was evident in the statistical decompositions and analysis of the data above. By extension, this further highlights the importance of seasonally adjusted quarterly real GDP.
+
+When analyzing specific dates, it can be seen that Q4-2004 to Q1-2005 has been identified as a recession, which lines up with the 2004 Indian Ocean earthquake and tsunami. Additionally, Q4-2008 to Q3-2009 and Q2-2010 to Q3-2010 have been identified as recessionary periods which line up with the global financial crisis of 2007-2009. Moreover, Q1-2020 to Q2-2020 line up with the start of the COVID-19 pandemic.
+
+The remaining recessionary period of Q3-2014 to Q4-2014, was driven primarily by a decline in tourism industry, fisheries industry and public administration. The decline in the tourism industry mainly stemmed from a decrease in tourist arrivals from the key markets of Russia (due to the Russian financial crisis) and China, while the decline in the fisheries industry was driven by a decrease in international tuna prices [@MMAQEB].
+
+It should be noted that a complete table stating the start and end date for recessions has been provided in Appendix \@ref(recession-dates) Table \@ref(tab:RecessionDatesTb).
+
+```{r FinalFilters, fig.cap = "FinalFilters", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/FinalFilters.pdf")
+```
+
+While examining specific turning points around recessions, an important distinction can be made among the estimators based on how they identified the recovery point for the first recession after the tsunami. BN filter had a positive value in Q3-2005 and ruled the economy to be above its potential output, while the rest of the methods only did so in Q1-2006, two quarters later. It should be noted that the preceding quarterly growth rate had moved to become positive by Q2-2005, and continued to be positive throughout the year.
+
+An additional important difference can be seen for the recession due to the financial crisis. The BN filter signalled that the economy was below potential output in Q4-2008, while the rest of the methods signalled so in Q1-2009. Furthermore, for the second dip in Q2-2010, piecewise linear trend model was slower by one quarter compared with the rest. It should also be noted that the BN filter and the Piecewise model showed a positive value for Q1-2011, a quarter before the BP filter and HP filter did.
+
+In the recession of 2014, all methods showed a negative output gap by Q4-2014. Additionally, in the following few years, there was an increased volatility in all methods, but the BN filter followed the preceding quarterly growth rate better than the rest of the methods.
+
+An interesting distinction can also be made in 2019 whereby, all methods except the BN filter showed a significant upward spike in 2019. Additionally, when the COVID-19 pandemic started, the BN filter and the BP filter showed negative output gaps in Q1-2020, while the rest only did so in Q2-2020. As the economy started recovering from the COVID-19 pandemic, all methods showed a positive output gap by Q1-2021.
+
+It should be noted that the full list of methods' estimated output gaps are illustrated in Appendix \@ref(final-estimates-of-all-methods).
+
+The correlation between GDP growth and the output gap could aid in determining how reasonable the output gap estimates are. Based on the equation by which the output gap is constructed ($Y-Y^*$, where $Y$ is the output and $Y^*$ is the potential output), an increase or decrease in $Y$ is likely to be reflected in the output gap itself (for example, $\uparrow Output\ gap = \uparrow Y - \bar{Y}^{*}$, assuming $Y^*$ constant). Therefore, a positive correlation between GDP growth and output gap in the same time period $(t)$ is expected.
+
+As such, when analyzing Figures \@ref(fig:RecessionChart) and \@ref(fig:FinalFilters) together, the differences in this regard between the BN filter and the rest of the methods are clearer. It is very noticeable how closely BN filter is correlated to the preceding quarterly growth rates, as opposed to the others. This is evident from the positive correlation between the output gap estimates and the preceding quarterly growth rates---shown in Figure \@ref(fig:GDPGrowthFilterCorrelation) below.
+
+```{r GDP correlation with filter estimates, include=FALSE, eval=FALSE}
+
+dcast(cycle_final[Vintage == v], Period ~ Method, value.var = "Value") -> Tb1
+
+copy(Growth.QNA) %>%
+  .[, c("Period", "QNA", "GrowthPrec")] %>%
+  merge(., Tb1, by = "Period") %>%
+  .[!is.na(GrowthPrec), !"Period"] %>%
+  cor() -> CorrTb
+
+CorrTb %>%
+  as.data.table(., keep.rownames = "Method") %>%
+  .[!(Method %in% c("QNA", "GrowthPrec")), c("Method", "GrowthPrec")] %>%
+  .[, "GrowthPrec" := GrowthPrec * 100] %>%
+  setnames(., old = "GrowthPrec", new = "Correlation with GDP Growth (Preceding)") -> Tb
+
+Tb[str_detect(Method, "BNF1|BP Short|HP|Piecewise")] %>%
+  .[order(-`Correlation with GDP Growth (Preceding)`)] -> Corr_Tb_f
+
+```
+
+```{r GDPGrowthFilterCorrelation, fig.cap="GDPFilterCorrelation", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/GDPCorrelFilters.pdf")
+```
+
+Additionally, the analysis of the correlation between GDP growth in the future at time period $t+4$, (i.e. $Y_{t+4}-Y_t$, where $Y$ is the log real GDP) and current cycle at time period $t$ ($c_t$) could help further in assessing whether the estimates were reasonable. As the output gap should mean-revert to the long-run growth or trend, being below potential would mean the economy needs to grow faster to catch up and vice versa. Therefore, a negative correlation between future GDP growth and current output gap is expected.
+
+While all methods satisfied this condition with negative correlations, based on all analysis up to now, it is clear that the BN filter performs better. Therefore, the method that would be recommended in this paper is the BN filter with the 40-window demeaning procedure.
+
+```{r Future GDP correlation with filter estimates, include=FALSE, eval=FALSE}
+
+# Function to test the correlation between cycle today and output in the future
+merge(cycle_final, Growth.QNA[, c("Period", "QNA")], by = "Period") -> Combined_dt
+
+Ct_Of <- function(dt,h) {
+  
+  data.table("Vintage" = as.character(),
+             "Method" = as.character(),
+             "Coefficient" = as.numeric(),
+             "Correlation" = as.numeric(),
+             "Only_h_corr" = as.numeric()) -> dtx
+  
+  dt[, Vintage] %>% unique() %>% .[1:(length(.)-h)] -> vintage
+  dt[, Method] %>% unique() %>% as.character() -> method
+  
+  for (i in 1:length(vintage)) {
+    for (m in method) {
+      
+      v1 <- vintage[i]
+      v2 <- (as.yearqtr(v1)+h/4) %>% as.character()
+      
+      dt[Method == m] -> Tbx
+      
+      Tbx[Vintage == v1] %>% .[, c("Period", "Value")] -> Tb1
+      Tbx[Vintage == v2] %>% .[, "Growth" := (exp((QNA-lag(QNA, n=h))/100)-1)*100] %>%
+        .[, c("Period", "Growth")] -> Tb2
+      
+      merge(Tb2, Tb1, by = "Period", all = TRUE) -> Tb
+      
+      # Regression
+      lm(formula = Growth ~ lag(Value, h), data = Tb) -> Regression
+      Regression[["coefficients"]] %>% .[2] %>% as.numeric() -> coef
+      
+      # Correlation
+      copy(Tb) %>%
+        .[, "Val_minus_h" := lag(Value, h)] %>%
+        .[!is.na(Val_minus_h), c("Val_minus_h", "Growth")] -> Tb3
+      
+      Tb3 %>% cor() %>% .[1,2] -> corr
+      Tb3 %>% tail(., n=h) %>% cor() %>% .[1,2] -> corr2
+      
+      
+      # Adding to data table
+      data.table("Vintage" = v1,
+                 "Method" = m,
+                 "Coefficient" = coef,
+                 "Correlation" = corr,
+                 "Only_h_corr" = corr2) %>%
+        rbind(dtx, .) -> dtx
+    }
+  }
+  
+  return(dtx)
+}
+
+Combined_Correlation_List <- list()
+
+for (i in 1:8) {
+  
+  Ct_Of(Combined_dt, i) -> Tb_f
+  
+  Tb_f[, .("Coeff" = mean(Coefficient),
+           "Corr" = mean(Correlation),
+           "Corr_h" = mean(Only_h_corr)), by = c("Method")] %>%
+    .[, "h" := i] -> Combined_Correlation_List[[i]]
+  
+  # Tb_f2 <- Tb_f[, "h" := i]
+  # Combined_Correlation_List[[i]] <- Tb_f2
+  
+}
+
+rbindlist(Combined_Correlation_List) -> Combined_Correlation_Dt
+
+Combined_Correlation_Dt[h == 4]
+
+ggplot() +
+  geom_hline(yintercept = 0, size = 0.25, colour="black") +
+  geom_line(data = Combined_Correlation_Dt,
+            aes(x = h, y = Coeff, color = Method)) +
+  labs(title = "Regression Coefficient")
+
+ggplot() +
+  geom_hline(yintercept = 0, size = 0.25, colour="black") +
+  geom_line(data = Combined_Correlation_Dt,
+            aes(x = h, y = Corr, color = Method)) +
+  labs(title = "Correlation - Whole Series")
+
+ggplot() +
+  geom_hline(yintercept = 0, size = 0.25, colour="black") +
+  geom_line(data = Combined_Correlation_Dt[!is.na(Corr_h)],
+            aes(x = h, y = Corr_h, color = Method)) +
+  labs(title = "Correlation - Only h quarters")
+
+```
+
+## Other discussions
+
+In this subsection, the differences between the three configurations of the BN filter would be examined, followed by the analysis of the confidence bands generated for the BN filter.
+
+### Configurations of the BN filter
+
+When examining the BN filter across the three configurations or variants, the close correlation between the best performing model (40-window demeaning procedure) and the second best performing model (demeaned using the sample mean) could indicate the absence of a structural break within the series. This is further supported by the fact that the third model (with manual break dates specified) is the worst performing model, in addition to the Bai-Perron test which did not identify any break dates.
+
+```{r DeltaBar, include=FALSE, eval=TRUE}
+
+window <- 40
+bnf1 <- bnf(y = QNA_sa, demean = "dm", wind = window)
+
+delta <- bnf1[["delta"]]
+delta_perc <- delta*100
+
+```
+
+This may not be an unexpected result, as a structural break would mean a significant change in the parameters---for which, there is a lack of evidence as no significant change in the overall behaviour of the growth series has been observed (Figure \@ref(fig:RecessionChart)). This is also supported by the ratio of the variance of trend shocks and the overall forecast error variance $(\bar{\delta})$ of `r delta`, that the model had optimized. This intuitively, indicates that `r delta_perc`% of the shocks to the trend are permanent or explains `r delta_perc`% of the overall forecast error variance.
+
+Since the differences in the three configurations mainly arise from how the demeaning procedure is undertaken to account for structural breaks, it is clear why there are relatively minor differences between them. Furthermore, it is also as expected that the more robust mean adjustment procedure performed better than the other variants.
+
+### Confidence bands
+
+It is possible to generate confidence bands or credible sets (Bayesian equivalent of confidence intervals), given that BN filter has an underlying model unlike the two other filters considered in the paper. Confidence bands are computed by inverting a $z$-test that the true output gap, $c_t$, is equal to a hypothesized value based on the unbiasedness, variance and assumed normality of the BN cycle. [@BNFilter]
+
+```{r BNConfBands, fig.cap = "BNConfBands", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/ConfBands.pdf")
+```
+
+Figure \@ref(fig:BNConfBands) illustrates the output gap estimates with 80% and 95% confidence bands. A caveat to the output gap estimates is that at the 95% confidence level (and 80% confidence level), no estimate has been significantly different from zero except in Q1-2005, Q2-2020 to Q3-2020 and Q1-2021 to Q2-2021. This would indicate that apart from the quarters identified, Maldives has not significantly deviated from its potential output growth.
+
+```{r Statistical significance from Confidence bands, include=FALSE, eval=FALSE}
+
+# Checking whether upper bound is less than 0
+BNF_full[UB_95 < 0]
+BNF_full[UB_80 < 0]
+
+# Checking whether lower bound is greater than 0
+BNF_full[LB_95 > 0]
+BNF_full[LB_80 > 0]
+
+```
+
+It should be noted that the high level of uncertainty in the BN filter is evident from the relatively wide confidence bands. However, this is likely to improve as the sample increases over time, allowing more precise estimates with more useful confidence bands.
+
+
+# Conclusion
+
+While the initial goal of the paper was to estimate the Maldivian output gap, the scope of the paper had to be expanded due to the unavailability of the seasonally adjusted Quarterly National Accounts. As such, seasonal adjustments for the Quarterly National Accounts were carried out based on the recommendations of the European Statistical System. It should be noted that based on the results of the pre-adjustment tests and post-adjustment residual tests, it could prove to be very useful as experimental seasonally adjusted data. However, it cannot and should not be taken as official seasonally adjusted quarterly real GDP---which would likely be much more robust and thoroughly tested prior to release.
+
+The paper examined different univariate statistical methods for the estimation of the output gap and recommended the BN filter based on the results of the revision properties and analysis of the output gap estimates based on the latest vintage, Q2-2021. An additional contribution was to produce reasonable output gap estimates, alongside the confidence bands for Maldives.
+
+Just as importantly, as an unintended by-product, the paper exposed the risks of using corresponding quarterly growth rates with seasonally unadjusted data to assess the performance of the economy, and form opinions and policy. The picture illustrated when using seasonally unadjusted and adjusted data are vastly different, likely due to the strong trend component that is present in the data. This highlights the importance of seasonally adjusted Quarterly National Accounts data.
+
+Additional data gaps were recognized when examining how to date recessions and assess the state of the economy. It is vital that these gaps within the system are fixed as they are important indicators to be monitored, especially in the context of policy-making.
+
+It is recommended that output gap estimates be integrated into the routine analysis of the economy and policy-making, especially in decisions on whether the fiscal and monetary policy should be tightened or loosened. It can be seen from Figure \@ref(fig:FinalFilters), output gap has been consistently estimated to be positive prior to the recessions. In such cases, the monetary policy and/or fiscal policy could be tightened. However, this may not be an obvious policy prescription in the case of Maldives, as the recessions were generally caused by external shocks and not necessarily due to overheating of the economy.
+
+Additionally, it is recommended that the experiments in the paper be revisited every few years with additional data to reassess and reaffirm the preferred method for the estimation of the output gap. As such, to aid the process, the paper and the underlying statistical programming, were prepared and written with a focus on reproducibility.
+
+For future research, the paper highlighted additional tests that could be carried out in the assessment process as more comprehensive data on price indices become available. Additionally, multivariate methods could be examined with the recommended method in this paper, the BN filter, used as a benchmark. Moreover, this paper would be an important bridge for additional macroeconomic research in topics such as the ones highlighted in the introduction.
+
+\newpage
+# References {-}
+
+<div id="refs"></div>
+
+
+\newpage
+# (APPENDIX) Appendix {-} 
+
+# JDemetra output
+
+## Variance decomposition
+
+Relative contribution of the components to the stationary portion of the variance in the original series, after the removal of the long term trend. Trend computed by Hodrick-Prescott filter (cycle length = 8.0 years).
+
+```{r VarDecomp}
+
+x13_model[["diagnostics"]][["variance_decomposition"]] %>%
+  as.data.table(., keep.rownames = TRUE) -> Tb
+colnames(Tb) <- c("Component", "Contribution")
+
+kable(Tb, format = "latex", booktabs = TRUE, digits = 4, format.args = list(big.mark = ","), linesep = "",
+      caption = "VarDecomp") %>%
+  kable_styling(., position = "center") %>%
+  row_spec(., 0, bold = TRUE)
+
+```
+
+## Combined non-parametric tests' results for stable seasonality
+
+```{r SeasonalityTests}
+
+x13_model[["diagnostics"]][["combined_test"]][["tests_for_stable_seasonality"]] %>%
+  as.data.table(., keep.rownames = "Test") -> Tb
+
+for (i in 1:nrow(Tb)) {
+  Tb[i,1] <- glue("{Tb[i,1]}$^{i}$")
+}
+
+kable(Tb[, !"Description"], format = "latex", booktabs = TRUE, digits = 4,
+      format.args = list(big.mark = ","), escape = FALSE, linesep = "",
+      caption = "SeasonalityTests") %>%
+  kable_styling(., position = "center") %>%
+  row_spec(., 0, bold = TRUE)
+
+combined_result <- x13_model[["diagnostics"]][["combined_test"]][["combined_seasonality_test"]] %>%
+  str_to_lower()
+
+n1 <- Tb[1, Description]
+n2 <- Tb[2, Description]
+n3 <- Tb[3, Description]
+```
+
+Identifiable seasonality `r combined_result`.
+
+__Notes:__ \newline
+^1.^ $\chi^2_3$: `r n1` \newline
+^2.^ $\mathbf{F}_{3,70}$: `r n2` \newline
+^3.^ $\mathbf{F}_{17,51}$: `r n3`\newline
+
+
+## Residual seasonality tests' results
+
+```{r ResTests}
+
+x13_model[["diagnostics"]][["residuals_test"]] %>%
+  as.data.table(., keep.rownames = "Test") -> Tb
+
+for (i in 1:nrow(Tb)) {
+  Tb[i,1] <- glue("{Tb[i,1]}$^{i}$")
+}
+
+kable(Tb[, !"Description"], format = "latex", booktabs = TRUE, digits = 4,
+      format.args = list(big.mark = ","), escape = FALSE, linesep = "",
+      caption = "ResTests") %>%
+  kable_styling(., position = "center") %>%
+  row_spec(., 0, bold = TRUE)
+
+n1 <- Tb[1, Description]
+n2 <- Tb[2, Description]
+n3 <- Tb[3, Description]
+n4 <- Tb[4, Description]
+n5 <- Tb[5, Description]
+n6 <- Tb[6, Description]
+n7 <- Tb[7, Description]
+n8 <- Tb[8, Description]
+
+```
+
+__Notes:__ \newline
+^1.^ $\chi^2_2$: `r n1` \newline
+^2.^ $\chi^2_2$: `r n2` \newline
+^3.^ $\mathbf{F}_{3,68}$: `r n3` \newline
+^4.^ $\mathbf{F}_{3,68}$: `r n4` \newline
+^5.^ $\mathbf{F}_{3,69}$: `r n5` \newline
+^6.^ $\mathbf{F}_{3,8}$: `r n6` \newline
+^7.^ $\mathbf{F}_{6,65}$: `r n7` \newline
+^8.^ $\mathbf{F}_{6,65}$: `r n8` \newline
+
+
+\newpage
+# Revision properties experiment 
+
+## Corresponding quarterly real GDP growth rates
+
+```{r GrowthTb}
+options(knitr.kable.NA = " ")
+
+Growth_Tb %>%
+  dcast(., Period ~ Estimate_number, value.var = "Growth") %>%
+  kable(., format = "latex", booktabs = TRUE, digits = 2,
+        format.args = list(big.mark = ","), linesep = "",
+        caption = "GrowthTb") %>%
+  kable_styling(., position = "center", latex_options = c("scale_down")) %>%
+  row_spec(0, bold = T)
+
+```
+
+## Revisions of growth rates
+
+```{r RevTb}
+options(knitr.kable.NA = " ")
+
+Rev_table_F %>%
+  kable(., format = "latex", booktabs = TRUE, digits = 2,
+        format.args = list(big.mark = ","), linesep = "",
+        caption = "RevTb") %>%
+  kable_styling(., position = "center", latex_options = c("scale_down")) %>%
+  row_spec(0, bold = T) %>%
+  row_spec(nrow(Rev_table_F), bold = T)
+
+```
+
+
+\newpage
+# Revision properties of statistical methods
+
+Models with the best performance are highlighted in bold and italics with their rank specified in superscript. For the measures under size of revisions (i.e. Root Mean Square and Standard Deviation), the best performing models have the lowest values. On the other hand, for the measures of correlation and the percentage of same signs, the best performing models have the highest values.
+
+## Size of Revisions
+
+```{r RevSizeTb}
+
+order_vec <- c("Linear Model", "Quadratic Model", "Piecewise Model", "HP Filter", "HP Filter Alternative", "BP Filter: 4-24 quarters", "BP Filter: 6-32 quarters", "BN Filter: 40-window Demeaning", "BN Filter: Sample Mean Demeaning", "BN Filter: Manual Break Dates")
+
+rev_dtx[Measure %in% c("Root Mean Square", "Standard Deviation")] -> Tb
+Tb[, "Value" := formatC(Value, digits = 2, format = "f")]
+
+unique(Tb[, Measure]) %>% as.character() -> measure
+
+for (m in measure) {
+
+  Tb[Measure == m] %>% .[order(Value)] -> Tbx
+
+  Tbx[1,Method] -> b1
+  Tbx[2,Method] -> b2
+  Tbx[3,Method] -> b3
+  
+  Tb[Measure == m & Method == b1, "Value" := paste0("\\textit{\\textbf{",Value,"\\textsuperscript{1}}}")]
+  Tb[Measure == m & Method == b2, "Value" := paste0("\\textit{\\textbf{",Value,"\\textsuperscript{2}}}")]
+  Tb[Measure == m & Method == b3, "Value" := paste0("\\textit{\\textbf{",Value,"\\textsuperscript{3}}}")]
+  
+}
+
+recode(Tb$Method,
+       "BNF1" = "BN Filter: 40-window Demeaning",
+       "BNF2" = "BN Filter: Sample Mean Demeaning",
+       "BNF3" = "BN Filter: Manual Break Dates",
+       "BP Long" = "BP Filter: 6-32 quarters",
+       "BP Short" = "BP Filter: 4-24 quarters",
+       "HP" = "HP Filter",
+       "HPAlt" = "HP Filter Alternative",
+       "Linear" = "Linear Model",
+       "Quadratic" = "Quadratic Model",
+       "Piecewise" = "Piecewise Model") -> Tb$Method
+
+Tb %>%
+  dcast(., Method ~ Measure, value.var = "Value") %>%
+  .[order(match(Method, order_vec))] %>%
+  kable(., format = "latex", booktabs = TRUE, digits = 2,
+        format.args = list(big.mark = ","), linesep = "",
+        caption = "RevSizeTb", escape = F) %>%
+  kable_styling(., position = "center") %>%
+  row_spec(0, bold = T)
+
+```
+
+## Correlation and sign of estimates
+
+```{r RevCorrTb}
+
+rev_dtx[Measure %in% c("Correlation", "Same Sign")] -> Tb
+Tb[, "Value" := formatC(Value, digits = 2, format = "f")]
+
+unique(Tb[, Measure]) %>% as.character() -> measure
+
+for (m in measure) {
+
+  Tb[Measure == m] %>%
+    .[order(-Value)] -> Tbx
+
+  Tbx[1,Method] -> b1
+  Tbx[2,Method] -> b2
+  Tbx[3,Method] -> b3
+  
+  Tb[Measure == m & Method == b1, "Value" := paste0("\\textit{\\textbf{",Value,"\\textsuperscript{1}}}")]
+  Tb[Measure == m & Method == b2, "Value" := paste0("\\textit{\\textbf{",Value,"\\textsuperscript{2}}}")]
+  Tb[Measure == m & Method == b3, "Value" := paste0("\\textit{\\textbf{",Value,"\\textsuperscript{3}}}")]
+}
+
+recode(Tb$Method,
+       "BNF1" = "BN Filter: 40-window Demeaning",
+       "BNF2" = "BN Filter: Sample Mean Demeaning",
+       "BNF3" = "BN Filter: Manual Break Dates",
+       "BP Long" = "BP Filter: 6-32 quarters",
+       "BP Short" = "BP Filter: 4-24 quarters",
+       "HP" = "HP Filter",
+       "HPAlt" = "HP Filter Alternative",
+       "Linear" = "Linear Model",
+       "Quadratic" = "Quadratic Model",
+       "Piecewise" = "Piecewise Model") -> Tb$Method
+
+Tb %>%
+  dcast(., Method ~ Measure, value.var = "Value") %>%
+  .[order(match(Method, order_vec))] %>%
+  kable(., format = "latex", booktabs = TRUE, digits = 2,
+        format.args = list(big.mark = ","), linesep = "",
+        caption = "RevCorrTb", escape = F) %>%
+  kable_styling(., position = "center") %>%
+  row_spec(0, bold = T)
+
+```
+
+
+\newpage
+# Recession dates
+
+```{r RecessionDatesTb}
+copy(Recession_Dates_Tb) -> Tb
+
+setnames(Tb, old = colnames(Tb), new = c("Recession Start Date", "Recession End Date"))
+
+Tb %>%
+  kable(., format = "latex", booktabs = TRUE, digits = 2,
+        format.args = list(big.mark = ","), linesep = "",
+        caption = "RecessionDatesTb") %>%
+  kable_styling(., position = "center") %>%
+  row_spec(0, bold = T)
+
+```
+
+# Corresponding quarterly growth rates
+
+```{r CorrGrowth, fig.cap = "CorrGrowth", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/CorrGrowth.pdf")
+```
+
+
+\newpage
+# Final estimates of all methods
+
+## BN filters' estimates
+
+```{r BNFALL, fig.cap = "BNFALL", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/BNF.pdf")
+```
+
+## BP filter, HP filter and HP filter alternative's estimates
+
+```{r BPHP, fig.cap = "BPHP", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/BPHP.pdf")
+```
+
+## Deterministic trends models' estimates
+
+```{r DETALL, fig.cap = "DETALL", fig.width=.width, fig.height=.height}
+knitr::include_graphics("charts/Deterministic.pdf")
+```
+

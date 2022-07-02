@@ -1,0 +1,55 @@
+/* Headers */
+.title-slide hgroup h1{
+  font-size: 40pt;
+  color: #213063;
+  margin-left: -75px;
+}
+
+.title-slide hgroup h2{
+  color: black;
+  line-height: 40px;
+  margin-left: -70px;
+}
+
+h2{
+  font-size: 25pt;
+  line-height: 0;
+  color: #213063;
+}
+
+h3{
+  font-size: 20pt;
+  line-height: 50px;
+  color: #213063;
+}
+
+h4{
+  font-size: 19pt;
+  line-height: 40px;
+  color: black;
+  font-weight: bold;
+}
+
+h5{
+  font-size: 15pt;
+  line-height: 40px;
+  color: black;
+}
+
+html, body, div, span, applet, object, iframe, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video{
+  color: black;
+}
+
+slides > slide.dark {
+  background: white !important;
+}
+
+.segue h2 {
+  color: #213063;
+}
+
+ol li, ul li {
+    margin-bottom: 0.5em;
+    padding: 0.1em;
+    font-size: 22px;
+}
